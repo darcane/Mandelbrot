@@ -9,7 +9,7 @@ function setup() {
     // createCanvas(1000,1000);
 
     frDiv = createDiv('');
-    escapeOrbit = 40;
+    escapeOrbit = 400;
     reset();
     let btn = createButton("Reset");
     btn.mousePressed(reset);
@@ -36,22 +36,14 @@ function mandelbrot(xF, yF, xL, yL) {
             else b = map(y, 0, height, maxY, minY);
             let n;
 
-            let ca = a,
-                cb = b;
-            for (n = 0; n < iterate; n++) {
-                let aa = a * a - b * b;
-                let bb = 2 * a * b;
-
-                a = aa + ca;
-                b = bb + cb;
-
-                if (sqrt(aa * aa + bb * bb) > escapeOrbit) { // escape orbit or bailant
-                    break;
-                }
+            let z = new Complex(a,b);
+            for (n = 0; n < iterate && z.modulus() < escapeOrbit; n++) {
+                z.square().plusWith(new Complex(a,b));
             }
-
-            let c = chooseColor(a,b,n);
-            if(n===iterate) colorPixel(x,y,0,0,0);
+            
+            let c = chooseColor(z,n);
+            
+            if(n===iterate || c == NaN) colorPixel(x,y,0,0,0);
             else colorPixel(x, y, c, 1, 1);
         }
     }
@@ -87,14 +79,14 @@ function mouseDragged() {
     rect(prevMouseX, prevMouseY, mouseX - prevMouseX, mouseY - prevMouseY);
 }
 
-function chooseColor(a,b,n){
-    let h = 0;
+function chooseColor(z,n){
+    let hue = 0;
 
-    h = n - Math.log(Math.log(sqrt(a * a + b * b)) / Math.log(escapeOrbit));
-    //h = map(h,0,n,0,360);
-    //h = Math.sin(h - n)*360;
+    hue = n - Math.log(Math.log(z.modulus()) / Math.log(escapeOrbit));
+    //hue = map(h,0,n,0,360);
+    //hue = Math.sin(h - n)*360;
 
-    return h;
+    return hue;
 }
 
 // hue: [0,360], sat: [0,1], val: [0,1]
