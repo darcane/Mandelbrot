@@ -2,11 +2,14 @@ let minX, minY, maxX, maxY;
 let iterate = 500;
 let mX, mY;
 let frDiv;
+let escapeOrbit;
 
 function setup() {
     createCanvas(1200, 800);
     // createCanvas(1000,1000);
+
     frDiv = createDiv('');
+    escapeOrbit = 40;
     reset();
     let btn = createButton("Reset");
     btn.mousePressed(reset);
@@ -26,7 +29,7 @@ function mandelbrot(xF, yF, xL, yL) {
     loadPixels();
     for (let x = 0; x < width; x++) {
         for (let y = 0; y < height; y++) {
-            let a, b;
+            let a=0, b=0;
             if (minX < maxX) a = map(x, 0, width, minX, maxX);
             else a = map(x, 0, width, maxX, minX);
             if (minY < maxY) b = map(y, 0, height, minY, maxY);
@@ -42,19 +45,14 @@ function mandelbrot(xF, yF, xL, yL) {
                 a = aa + ca;
                 b = bb + cb;
 
-                if (aa * aa + bb * bb > 1000) {
+                if (sqrt(aa * aa + bb * bb) > escapeOrbit) { // escape orbit or bailant
                     break;
                 }
             }
 
-            // let h = n + 1 - Math.log(Math.log(sqrt(a * a + b * b))) / Math.log(2);
-            // h = h / iterate;
-            // h = map(h, 0, 1, 0, 360); //??
-            // console.log(h);
-            let h = n - Math.log2(Math.log(sqrt(a * a + b * b)) / Math.log(1000));
-            h = (h - n) * 360;
-            // console.log(h);
-            colorPixel(x, y, h, 0.6, 1);
+            let c = chooseColor(a,b,n);
+            if(n===iterate) colorPixel(x,y,0,0,0);
+            else colorPixel(x, y, c, 1, 1);
         }
     }
     updatePixels();
@@ -65,7 +63,6 @@ function mandelbrot(xF, yF, xL, yL) {
 }
 
 let prevMouseX, prevMouseY;
-
 function mousePressed() {
     if (mouseX > width || mouseY > height) return;
     prevMouseX = mouseX;
@@ -74,7 +71,6 @@ function mousePressed() {
     mY = map(mouseY, 0, height, minY, maxY);
     console.log("Pressed to :" + mX + " " + mY);
 }
-
 function mouseReleased() {
     if (mouseX > width || mouseY > height) return;
     let rX = map(mouseX, 0, width, minX, maxX);
@@ -83,7 +79,6 @@ function mouseReleased() {
     mandelbrot(mX, mY, rX, rY);
     console.log("Release at :" + rX + " " + rY);
 }
-
 function mouseDragged() {
     if (mouseX > width || mouseY > height) return;
     strokeWeight(1);
@@ -92,8 +87,27 @@ function mouseDragged() {
     rect(prevMouseX, prevMouseY, mouseX - prevMouseX, mouseY - prevMouseY);
 }
 
+function chooseColor(a,b,n){
+    let h = 0;
+
+    h = n - Math.log(Math.log(sqrt(a * a + b * b)) / Math.log(escapeOrbit));
+    //h = map(h,0,n,0,360);
+    //h = Math.sin(h - n)*360;
+
+    return h;
+}
+
 // hue: [0,360], sat: [0,1], val: [0,1]
 function colorPixel(pixelX, pixelY, hue, sat, val) {
+    let c = HSVtoRGB(hue,sat,val);
+    let pix = (pixelX + pixelY * width) * 4;
+    pixels[pix + 0] = c.levels[0];
+    pixels[pix + 1] = c.levels[1];
+    pixels[pix + 2] = c.levels[2];
+    pixels[pix + 3] = c.levels[3];
+}
+
+function HSVtoRGB(hue,sat,val){
     let C = val * sat;
     let X = C * (1 - abs((hue / 60) % 2 - 1));
     let m = val - C;
@@ -129,9 +143,5 @@ function colorPixel(pixelX, pixelY, hue, sat, val) {
         b1 = -m;
     }
 
-    let pix = (pixelX + pixelY * width) * 4;
-    pixels[pix + 0] = (r1 + m) * 255;
-    pixels[pix + 1] = (g1 + m) * 255;
-    pixels[pix + 2] = (b1 + m) * 255;
-    pixels[pix + 3] = 255;
+    return color((r1 + m) * 255,(g1 + m) * 255,(b1 + m) * 255);
 }
