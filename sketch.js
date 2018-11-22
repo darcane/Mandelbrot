@@ -1,5 +1,5 @@
 let minX, minY, maxX, maxY;
-let iterate = 500;
+let maxIteration = 500;
 let mX, mY;
 let frDiv;
 let escapeOrbit;
@@ -37,13 +37,13 @@ function mandelbrot(xF, yF, xL, yL) {
             let n;
 
             let z = new Complex(a,b);
-            for (n = 0; n < iterate && z.modulus() < escapeOrbit; n++) {
+            for (n = 0; n < maxIteration && z.modulus() < escapeOrbit; n++) {
                 z.square().plusWith(new Complex(a,b));
             }
             
-            let c = chooseColor(z,n);
+            let c = chooseHue(z,n);
             
-            if(n===iterate || c == NaN) colorPixel(x,y,0,0,0);
+            if(n===maxIteration || c == NaN) colorPixel(x,y,0,0,0);
             else colorPixel(x, y, c, 1, 1);
         }
     }
@@ -79,13 +79,14 @@ function mouseDragged() {
     rect(prevMouseX, prevMouseY, mouseX - prevMouseX, mouseY - prevMouseY);
 }
 
-function chooseColor(z,n){
+function chooseHue(z,n){
     let hue = 0;
+    
+    //hue = n - Math.log(Math.log(z.modulus()) / Math.log(escapeOrbit));
 
-    hue = n - Math.log(Math.log(z.modulus()) / Math.log(escapeOrbit));
-    //hue = map(h,0,n,0,360);
-    //hue = Math.sin(h - n)*360;
-
+    hue = n + 1 - Math.log(Math.log(z.modulus())) /escapeOrbit;
+    hue = (hue/maxIteration) * 360;
+    
     return hue;
 }
 
