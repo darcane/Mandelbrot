@@ -1,15 +1,15 @@
 let minX, minY, maxX, maxY;
-let maxIteration = 500;
+let maxIteration = 200;
 let mX, mY;
 let frDiv;
 let escapeOrbit;
 
 function setup() {
-    createCanvas(1200, 800);
+    createCanvas(450, 300);
     // createCanvas(1000,1000);
 
     frDiv = createDiv('');
-    escapeOrbit = 400;
+    escapeOrbit = 4;
     reset();
     let btn = createButton("Reset");
     btn.mousePressed(reset);
@@ -36,15 +36,24 @@ function mandelbrot(xF, yF, xL, yL) {
             else b = map(y, 0, height, maxY, minY);
             let n;
 
+            let c = new Complex(a,b);
             let z = new Complex(a,b);
+            //let der = new Complex(1,0);
+            //let der2 = new Complex(0,0);
             for (n = 0; n < maxIteration && z.modulus() < escapeOrbit; n++) {
-                z.square().plusWith(new Complex(a,b));
+                let newZ =  z.square().add(c);
+                //let newDer = z.add(2).mult(der).add(1);
+                //let newDer2 = der2.mult(z).add(der.square()).mult(2);
+                z = newZ;
+                //der = newDer;
+                //der2 = newDer2;
             }
             
-            let c = chooseHue(z,n);
+            let clr = chooseHue(z,n);
+            //let clr = fancyChooser(z,der,der2);
             
-            if(n===maxIteration || c == NaN) colorPixel(x,y,0,0,0);
-            else colorPixel(x, y, c, 1, 1);
+            if(n===maxIteration || clr == NaN) colorPixel(x,y,0,0,0);
+            else colorPixel(x, y, clr, 1, 1);
         }
     }
     updatePixels();
@@ -88,6 +97,15 @@ function chooseHue(z,n){
     hue = (hue/maxIteration) * 360;
     
     return hue;
+}
+
+function fancyChooser(z,der,der2,){
+    let lo = 0.5 * Math.log(z.squared_modulus());
+    let a = z.mult(der2).conj().mult(-lo);
+    let b = der.square().conj().mult(1+lo).add(a);
+    let u = z.mult(der).mult(b);
+    u = u.divide(u.modulus());
+    return u.mult(360).modulus() % 360;
 }
 
 // hue: [0,360], sat: [0,1], val: [0,1]
