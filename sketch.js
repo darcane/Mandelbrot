@@ -3,11 +3,12 @@ let maxIteration = 200;
 let mX, mY;
 let frDiv;
 let escapeOrbit;
+let palette = [];
 
 function setup() {
-    createCanvas(450, 300);
+    createCanvas(900, 600);
     // createCanvas(1000,1000);
-
+    setColorPalette();
     frDiv = createDiv('');
     escapeOrbit = 4;
     reset();
@@ -29,31 +30,36 @@ function mandelbrot(xF, yF, xL, yL) {
     loadPixels();
     for (let x = 0; x < width; x++) {
         for (let y = 0; y < height; y++) {
-            let a=0, b=0;
+            let a = 0,
+                b = 0;
             if (minX < maxX) a = map(x, 0, width, minX, maxX);
             else a = map(x, 0, width, maxX, minX);
             if (minY < maxY) b = map(y, 0, height, minY, maxY);
             else b = map(y, 0, height, maxY, minY);
             let n;
 
-            let c = new Complex(a,b);
-            let z = new Complex(a,b);
+            let c = new Complex(a, b);
+            let z = new Complex(a, b);
             //let der = new Complex(1,0);
             //let der2 = new Complex(0,0);
             for (n = 0; n < maxIteration && z.modulus() < escapeOrbit; n++) {
-                let newZ =  z.square().add(c);
+                let newZ = z.square().add(c);
                 //let newDer = z.add(2).mult(der).add(1);
                 //let newDer2 = der2.mult(z).add(der.square()).mult(2);
                 z = newZ;
                 //der = newDer;
                 //der2 = newDer2;
             }
-            
-            let clr = chooseHue(z,n);
+
+            let clr = chooseHue(z, n);
             //let clr = fancyChooser(z,der,der2);
-            
-            if(n===maxIteration || clr == NaN) colorPixel(x,y,0,0,0);
-            else colorPixel(x, y, clr, 1, 1);
+
+            //if(n===maxIteration || clr == NaN) colorPixel(x,y,0,0,0);
+            //else colorPixel(x, y, clr, 1, 1);
+
+            if (n === maxIteration || clr == NaN) colorPixelRGB(x, y, color(0, 0, 0));
+            else colorPixelRGB(x, y, palette[Math.floor(clr)]);
+
         }
     }
     updatePixels();
@@ -63,7 +69,18 @@ function mandelbrot(xF, yF, xL, yL) {
     frDiv.html('X wide : [' + (abs(minX - maxX) + '] </br>Y wide: [' + abs(minY - maxY)) + ']');
 }
 
+function setColorPalette() {
+    for (let r = 0; r < 256; r+=4) {
+        for(let g= 0; g<256;g+=4){
+            for (let b = 0; b < 256; b+=4) {
+                palette.push(color(r, g, b));
+            }
+        }
+    }
+}
+
 let prevMouseX, prevMouseY;
+
 function mousePressed() {
     if (mouseX > width || mouseY > height) return;
     prevMouseX = mouseX;
@@ -72,6 +89,7 @@ function mousePressed() {
     mY = map(mouseY, 0, height, minY, maxY);
     console.log("Pressed to :" + mX + " " + mY);
 }
+
 function mouseReleased() {
     if (mouseX > width || mouseY > height) return;
     let rX = map(mouseX, 0, width, minX, maxX);
@@ -80,6 +98,7 @@ function mouseReleased() {
     mandelbrot(mX, mY, rX, rY);
     console.log("Release at :" + rX + " " + rY);
 }
+
 function mouseDragged() {
     if (mouseX > width || mouseY > height) return;
     strokeWeight(1);
@@ -88,21 +107,21 @@ function mouseDragged() {
     rect(prevMouseX, prevMouseY, mouseX - prevMouseX, mouseY - prevMouseY);
 }
 
-function chooseHue(z,n){
+function chooseHue(z, n) {
     let hue = 0;
-    
+
     //hue = n - Math.log(Math.log(z.modulus()) / Math.log(escapeOrbit));
 
-    hue = n + 1 - Math.log(Math.log(z.modulus())) /escapeOrbit;
-    hue = (hue/maxIteration) * 360;
-    
+    hue = n + 1 - Math.log(Math.log(z.modulus())) / escapeOrbit;
+    hue = (hue / maxIteration) * 64*64*64;
+
     return hue;
 }
 
-function fancyChooser(z,der,der2,){
+function fancyChooser(z, der, der2) {
     let lo = 0.5 * Math.log(z.squared_modulus());
     let a = z.mult(der2).conj().mult(-lo);
-    let b = der.square().conj().mult(1+lo).add(a);
+    let b = der.square().conj().mult(1 + lo).add(a);
     let u = z.mult(der).mult(b);
     u = u.divide(u.modulus());
     return u.mult(360).modulus() % 360;
@@ -110,7 +129,7 @@ function fancyChooser(z,der,der2,){
 
 // hue: [0,360], sat: [0,1], val: [0,1]
 function colorPixel(pixelX, pixelY, hue, sat, val) {
-    let c = HSVtoRGB(hue,sat,val);
+    let c = HSVtoRGB(hue, sat, val);
     let pix = (pixelX + pixelY * width) * 4;
     pixels[pix + 0] = c.levels[0];
     pixels[pix + 1] = c.levels[1];
@@ -118,7 +137,15 @@ function colorPixel(pixelX, pixelY, hue, sat, val) {
     pixels[pix + 3] = c.levels[3];
 }
 
-function HSVtoRGB(hue,sat,val){
+function colorPixelRGB(pixelX, pixelY, c) {
+    let pix = (pixelX + pixelY * width) * 4;
+    pixels[pix + 0] = c.levels[0];
+    pixels[pix + 1] = c.levels[1];
+    pixels[pix + 2] = c.levels[2];
+    pixels[pix + 3] = c.levels[3];
+}
+
+function HSVtoRGB(hue, sat, val) {
     let C = val * sat;
     let X = C * (1 - abs((hue / 60) % 2 - 1));
     let m = val - C;
@@ -154,5 +181,5 @@ function HSVtoRGB(hue,sat,val){
         b1 = -m;
     }
 
-    return color((r1 + m) * 255,(g1 + m) * 255,(b1 + m) * 255);
+    return color((r1 + m) * 255, (g1 + m) * 255, (b1 + m) * 255);
 }
